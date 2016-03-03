@@ -1,0 +1,221 @@
+##############################################################################
+##############################################################################
+# Model specification
+# Nonlinear model for input design
+# Version 2015-01-26
+#
+# Copyright (c) 2015 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
+
+#=============================================================================
+# Model structure
+#=============================================================================
+# xtt = 1.0 / ( self.par[0] + xt**2 ) + ut + self.par[2] * vt,
+# yt  = self.par[1] * xt**2                + self.par[3] * et.
+#
+# vt  ~ N(0,1)
+# et  ~ N(0,1)
+
+import numpy          as np
+from   scipy          import optimize
+from   scipy.stats    import norm
+from   models_helpers import *
+from   models_dists   import *
+
+class ssm(object):
+
+    #=========================================================================
+    # Define model settings
+    #=========================================================================
+    nPar          = 4;
+    par           = np.zeros(nPar);
+    modelName     = "Nonlinear system for input design"
+    filePrefix    = "nlid";
+    supportsFA    = False;
+    nParInference = 2;
+    nQInference   = 10;
+
+    #=========================================================================
+    # Define the model
+    #=========================================================================
+    def generateInitialState( self, nPart ):
+        return 0.0;
+
+    def generateState(self, xt, tt):
+        return 1.0 / ( self.par[0] + xt**2 ) + self.u[tt] + self.par[2] * np.random.randn(1,len(xt));
+
+    def evaluateState(self, xtt, xt, tt):
+        return norm.logpdf(xtt, 1.0 / ( self.par[0] + xt**2 ) + self.u[tt], self.par[2] );
+
+    def generateObservation(self, xt, tt):
+        return self.par[1] * xt**2 + self.par[3] * np.random.randn(1,len(xt));
+
+    def evaluateObservation(self, xt, tt):
+        return norm.logpdf( self.y[tt], self.par[1] * xt**2, self.par[3] );
+
+    #=========================================================================
+    # Define Q-function for EM algorithm
+    #=========================================================================
+    def Qfunc(self, xtt, xt, st, at, tt):
+        nOut = len(xtt);
+        qq = np.zeros(( nOut, self.nQInference ));
+
+        for v1 in range( self.nQInference ):
+            if v1 == 0:
+                qq[:,v1] = 0.5 * self.par[2]**(-2) * ( xtt - self.par[0] * xt - xt / ( self.par[1] + xt**2) - self.u[tt] )**2
+#                qq[:,v1] = xtt * xtt
+#            elif v1 == 1:
+#                qq[:,v1] = -2.0 * self.par[0] * xt * xtt
+#            elif v1 == 2:
+#                qq[:,v1] = -2.0 * xt * xtt / ( self.par[1] + xt * xt)
+#            elif v1 == 3:
+#                qq[:,v1] = -2.0 * xtt * self.u[tt]
+#            elif v1 == 4:
+#                qq[:,v1] = self.par[0]**2 * xt * xt
+#            elif v1 == 5:
+#                qq[:,v1] = 2.0 * self.par[0] * xt * xtt / ( self.par[1] + xt * xt)
+#            elif v1 == 6:
+#                qq[:,v1] = 2.0 * self.par[0] * xt * self.u[tt]
+#            elif v1 == 7:
+#                qq[:,v1] = xt * xt / ( self.par[1] + xt * xt )**2
+#            elif v1 == 8:
+#                qq[:,v1] = 2.0 * xt * self.u[tt] / ( self.par[1] + xt * xt )
+#            elif v1 == 9:
+#                qq[:,v1] = self.u[tt] * self.u[tt]
+            else:
+                qq[:,v1] = 0.0;
+        return(qq);
+
+    #=========================================================================
+    # Define M-step for EM algorithm
+    #=========================================================================
+    def Mstep(self, sm, gamma=0.0):
+        self.gamma = gamma;
+
+        def QfuncToOpt(par):
+            self.par[0] = par[0];
+            self.par[1] = par[1];
+            print(par);
+
+            sm.smoother(self,fixParticles=True);
+
+            if ( self.gamma == 0.0 ):
+                return np.sum( sm.qfunc )
+            else:
+                # stochastic approximation
+                self.suff = ( 1.0 - self.gamma ) * self.suff  + self.gamma * sm.qfunc;
+                return np.sum( self.suff );
+
+        x0 = self.returnParameters();
+        res = optimize.fmin_l_bfgs_b(QfuncToOpt, x0, approx_grad=1, bounds=((0.1,10.0),(0.1,10.0)))
+        #res = optimize.fmin_bfgs(QfuncToOpt, x0, gtol=1e-03 )
+        #res = optimize.fmin(QfuncToOpt, x0)
+        print(res[0])
+        return res[0]
+
+    #=========================================================================
+    # Define gradients of logarithm of complete data-likelihood
+    #=========================================================================
+    def Dparm(self, xtt, xt, st, at, tt):
+
+        nOut = len(xtt);
+        gradient = np.zeros(( nOut, self.nParInference ));
+
+        for v1 in range(0,self.nParInference):
+            if v1 == 0:
+                gradient[:,v1] = 1.0*xt*(-self.par[0]*xt - self.u[tt] + xtt + 1.0/(self.par[1]*xt))/self.par[2]**2
+            elif v1 == 1:
+                gradient[:,v1] = 1.0*(-self.par[0]*xt - self.u[tt] + xtt + 1.0/(self.par[1]*xt))/(self.par[1]**2*self.par[2]**2*xt)
+            elif v1 == 2:
+                gradient[:,v1] = -1.0/self.par[2] + 1.0*(-self.par[0]*xt - self.u[tt] + xtt + 1.0/(self.par[1]*xt))**2.0/self.par[2]**3
+            elif v1 == 3:
+                gradient[:,v1] = 1.0*xt*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])/self.par[5]**2
+            elif v1 == 4:
+                gradient[:,v1] = -1.0*xt**2*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])/self.par[5]**2
+            elif v1 == 5:
+                gradient[:,v1] = -1/self.par[5] + 1.0*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])**2.0/self.par[5]**3
+            else:
+                gradient[:,v1] = 0.0;
+        return(gradient);
+
+    #=========================================================================
+    # Define Hessians of logarithm of complete data-likelihood
+    #=========================================================================
+    def DDparm(self, xtt, xt, st, at, tt):
+        nOut = len(xtt);
+        hessian = np.zeros( (nOut, self.nParInference,self.nParInference) );
+
+        for v1 in range(0,self.nParInference):
+            for v2 in range(0,self.nParInference):
+
+                if ( (v1 == 0) & (v2 == 0) ):
+                    hessian[:,v1,v2] = -1.0*xt**2/self.par[2]**2
+
+                elif ( (v1 == 1) & (v2 == 1) ):
+                    hessian[:,v1,v2] = (2.0*self.par[0]*xt + 2.0*self.u[tt] - 2.0*xtt - 3.0/(self.par[1]*xt))/(self.par[1]**3*self.par[2]**2*xt)
+
+                elif ( (v1 == 2) & (v2 == 2) ):
+                    hessian[:,v1,v2] = (1 - 3.0*(self.par[0]*xt + self.u[tt] - xtt - 1.0/(self.par[1]*xt))**2/self.par[2]**2)/self.par[2]**2
+
+                elif ( (v1 == 3) & (v2 == 3) ):
+                    hessian[:,v1,v2] = -1.0*xt**2/self.par[5]**2
+
+                elif ( (v1 == 4) & (v2 == 4) ):
+                    hessian[:,v1,v2] = -1.0*xt**4/self.par[5]**2
+
+                elif ( (v1 == 5) & (v2 == 5) ):
+                    hessian[:,v1,v2] = (1.0 - 3.0*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])**2/self.par[5]**2)/self.par[5]**2
+
+                elif ( ( (v1 == 1) & (v2 == 0) ) | ( (v1 == 0) & (v2 == 1) ) ):
+                    hessian[:,v1,v2] = -1.0/(self.par[1]**2*self.par[2]**2)
+
+                elif ( ( (v1 == 0) & (v2 == 2) ) | ( (v1 == 2) & (v2 == 0) ) ):
+                    hessian[:,v1,v2] = 2.0*xt*(self.par[0]*xt + self.u[tt] - xtt - 1.0/(self.par[1]*xt))/self.par[2]**3
+
+                elif ( ( (v1 == 1) & (v2 == 2) ) | ( (v1 == 2) & (v2 == 1) ) ):
+                    hessian[:,v1,v2] = 2.0*(self.par[0]*xt + self.u[tt] - xtt - 1.0/(self.par[1]*xt))/(self.par[1]**2*self.par[2]**3*xt)
+
+                elif ( ( (v1 == 3) & (v2 == 4) ) | ( (v1 == 4) & (v2 == 3) ) ):
+                    hessian[:,v1,v2] = 1.0*xt**3/self.par[5]**2
+
+                elif ( ( (v1 == 3) & (v2 == 5) ) | ( (v1 == 5) & (v2 == 3) ) ):
+                    hessian[:,v1,v2] = -2.0*xt*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])/self.par[5]**3
+
+                elif ( ( (v1 == 4) & (v2 == 5) ) | ( (v1 == 5) & (v2 == 4) ) ):
+                    hessian[:,v1,v2] = 2.0*xt**2*(-self.par[3]*xt + self.par[4]*xt**2 + self.y[tt])/self.par[5]**3
+
+                else:
+                    hessian[:,v1,v2] = 0.0;
+        return(hessian);
+
+    #=========================================================================
+    # Define standard methods for the model struct
+    #=========================================================================
+
+    # Standard priors
+    priorUniform            = empty_priorUniform;
+    prior                   = empty_prior;
+    dprior1                 = empty_dprior1
+    ddprior1                = empty_ddprior1
+
+    # Standard operations on struct
+    copyData                = template_copyData;
+    storeParameters         = template_storeParameters;
+    returnParameters        = template_returnParameters
+
+    # No tranformations available
+    transform               = empty_transform;
+    invTransform            = empty_invTransform;
+    Jacobian                = empty_Jacobian;
+
+    # Standard data generation for this model
+    generateData            = template_generateData;
+
+    # No faPF available for this model
+    generateStateFA         = empty_generateStateFA;
+    evaluateObservationFA   = empty_evaluateObservationFA;
+    generateObservationFA   = empty_generateObservationFA;
+
