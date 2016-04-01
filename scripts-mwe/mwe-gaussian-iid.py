@@ -6,7 +6,9 @@
 # (c) Johan Dahlin 2016 ( johan.dahlin (at) liu.se )
 ##############################################################################
 
-import numpy   as np
+import numpy            as np
+import matplotlib.pylab as plt
+
 from   state   import smc
 from   para    import pmh_correlatedRVs
 from   models  import normalIID_2parameters
@@ -42,7 +44,7 @@ sys.generateData();
 # Setup the parameters
 ##############################################################################
 th               = normalIID_2parameters.ssm()
-th.nParInference = 1;
+th.nParInference = 2;
 th.copyData(sys);
 
 
@@ -51,7 +53,7 @@ th.copyData(sys);
 ##############################################################################
 sm.filter          = sm.SISrv;
 sm.sortParticles   = False;
-sm.nPart           = 10;
+sm.nPart           = 50;
 sm.resampFactor    = 2.0;
 sm.genInitialState = True;
 
@@ -61,30 +63,103 @@ sm.genInitialState = True;
 ##############################################################################
 pmh.nIter                  = 10000;
 pmh.nBurnIn                = 2500;
+pmh.nProgressReport        = 1000
 
 pmh.rvnSamples             = 1 + sm.nPart;
-
-pmh.nProgressReport        = 5000
 pmh.writeOutProgressToFile = False;
 
 # Set initial parameters
-pmh.initPar                = ( 0.50, 0.30 )
+pmh.initPar                = sys.par;
 
 # Settings for th proposal
-pmh.invHessian             = 1.0;
-pmh.stepSize               = 0.10;
+pmh.invHessian             = np.matrix([[ 0.01338002, -0.00031321],
+                                        [-0.00031321,  0.00943717]]);
+pmh.stepSize               = 2.562 / np.sqrt(th.nParInference);
 
 # Settings for u proposal
-pmh.sigmaU                 = 0.50
+
 pmh.alpha                  = 0.00
 
 
 ##############################################################################
-# Run the sampler
+# Run the correlated pmMH algorithm and plot the results
 ##############################################################################
 
+pmh.sigmaU = 0.35
 pmh.runSampler( sm, sys, th );
 
+plt.figure(1);
+plt.subplot(2,3,1); 
+plt.plot(pmh.th[:,0]); 
+plt.xlabel("iteration"); 
+plt.ylabel("mu");
+
+plt.subplot(2,3,2); 
+plt.hist(pmh.th[:,0],normed=True); 
+plt.xlabel("mu"); 
+plt.ylabel("posterior estimate");
+
+plt.subplot(2,3,3); 
+plt.acorr(pmh.th[:,0],maxlags=500); 
+plt.axis((0,500,0.85,1))
+plt.xlabel("iteration"); 
+plt.ylabel("acf of mu");
+
+plt.subplot(2,3,4); 
+plt.plot(pmh.th[:,1]); 
+plt.xlabel("iteration"); 
+plt.ylabel("sigmav");
+
+plt.subplot(2,3,5); 
+plt.hist(pmh.th[:,1],normed=True); 
+plt.xlabel("sigmav"); 
+plt.ylabel("posterior estimate");
+
+plt.subplot(2,3,6); 
+plt.acorr(pmh.th[:,1],maxlags=500); 
+plt.axis((0,500,0.85,1))
+plt.xlabel("iteration"); 
+plt.ylabel("acf of sigmav");
+
+##############################################################################
+# Run the standard pmMH algorithm and plot the results
+##############################################################################
+
+pmh.sigmaU = 1.0
+pmh.runSampler( sm, sys, th );
+
+plt.figure(2);
+plt.subplot(2,3,1); 
+plt.plot(pmh.th[:,0]); 
+plt.xlabel("iteration"); 
+plt.ylabel("mu");
+
+plt.subplot(2,3,2); 
+plt.hist(pmh.th[:,0],normed=True); 
+plt.xlabel("mu"); 
+plt.ylabel("posterior estimate");
+
+plt.subplot(2,3,3); 
+plt.acorr(pmh.th[:,0],maxlags=500); 
+plt.axis((0,500,0.85,1))
+plt.xlabel("iteration"); 
+plt.ylabel("acf of mu");
+
+plt.subplot(2,3,4); 
+plt.plot(pmh.th[:,1]); 
+plt.xlabel("iteration"); 
+plt.ylabel("sigmav");
+
+plt.subplot(2,3,5); 
+plt.hist(pmh.th[:,1],normed=True); 
+plt.xlabel("sigmav"); 
+plt.ylabel("posterior estimate");
+
+plt.subplot(2,3,6); 
+plt.acorr(pmh.th[:,1],maxlags=500); 
+plt.axis((0,500,0.85,1))
+plt.xlabel("iteration"); 
+plt.ylabel("acf of sigmav");
 
 ##############################################################################
 # End of file

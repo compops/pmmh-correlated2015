@@ -53,7 +53,7 @@ th.copyData(sys);
 
 sm.filter          = sm.bPFrv;
 sm.sortParticles   = True;
-sm.nPart           = 100;
+sm.nPart           = 50;
 sm.resampFactor    = 2.0;
 sm.genInitialState = True;
 
@@ -63,17 +63,14 @@ sm.genInitialState = True;
 ##############################################################################
 pmh.nIter                   = 10000;
 pmh.nBurnIn                 = 1000;
-pmh.nProgressReport         = 5000;
+pmh.nProgressReport         = 1000;
 
 pmh.rvnSamples              = 1 + sm.nPart;
 pmh.writeOutProgressToFile  = False;
 
 # Settings for th proposal
-pmh.initPar        = sys.th;
-pmh.invHessian     = np.matrix([[  3.84374302e-02,   2.91796833e-04,  -5.30385701e-04,  -1.63398216e-03],
-                                [  2.91796833e-04,   9.94254177e-05,  -2.60256138e-04,  -1.73977480e-04],
-                                [ -5.30385701e-04,  -2.60256138e-04,   1.19067965e-03,   2.80879579e-04],
-                                [ -1.63398216e-03,  -1.73977480e-04,   2.80879579e-04,   6.45765006e-03]])
+pmh.initPar        = sys.par;
+pmh.invHessian     = np.diag((0.001,0.001,0.001))
 pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
 
 # Settings for u proposal
