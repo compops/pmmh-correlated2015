@@ -1,15 +1,17 @@
 ##############################################################################
 # Minimal working example
-# Parameter inference in linear Gaussian state space model
+# Parameter inference in Gaussian IID model
 # using correlated psuedo-marginal Metropolis-Hastings
 #
 # (c) Johan Dahlin 2016 ( johan.dahlin (at) liu.se )
 ##############################################################################
 
-import numpy   as np
+import numpy            as np
+import matplotlib.pylab as plt
+
 from   state   import smc
 from   para    import pmh_correlatedRVs
-from   models  import lgss_4parameters
+from   models  import normalIID_2parameters
 
 np.random.seed( 87655678 );
 
@@ -23,13 +25,12 @@ pmh              = pmh_correlatedRVs.stcPMH();
 ##############################################################################
 # Setup the system
 ##############################################################################
-sys               = lgss_4parameters.ssm()
+sys               = normalIID_2parameters.ssm()
 sys.par           = np.zeros((sys.nPar,1))
 sys.par[0]        = 0.50;
-sys.par[1]        = 0.80;
-sys.par[2]        = 1.00;
-sys.par[3]        = 0.10;
-sys.T             = 100;
+sys.par[1]        = 0.30;
+sys.par[2]        = 0.10;
+sys.T             = 10;
 sys.xo            = 0.0;
 
 
@@ -42,18 +43,17 @@ sys.generateData();
 ##############################################################################
 # Setup the parameters
 ##############################################################################
-th               = lgss_4parameters.ssm()
-th.nParInference = 3;
+th               = normalIID_2parameters.ssm()
+th.nParInference = 1;
 th.copyData(sys);
 
 
 ##############################################################################
-# Setup the SMC algorithm
+# Setup the IS algorithm
 ##############################################################################
-
-sm.filter          = sm.bPFrv;
-sm.sortParticles   = True;
-sm.nPart           = 50;
+sm.filter          = sm.SISrv;
+sm.sortParticles   = False;
+sm.nPart           = 10;
 sm.resampFactor    = 2.0;
 sm.genInitialState = True;
 
@@ -61,21 +61,22 @@ sm.genInitialState = True;
 ##############################################################################
 # Setup the PMH algorithm
 ##############################################################################
-pmh.nIter                   = 10000;
-pmh.nBurnIn                 = 2500;
-pmh.nProgressReport         = 1000;
+pmh.nIter                  = 30000;
+pmh.nBurnIn                = 10000;
+pmh.nProgressReport        = 5000;
 
-pmh.rvnSamples              = 1 + sm.nPart;
-pmh.writeOutProgressToFile  = False;
+pmh.rvnSamples             = 1 + sm.nPart;
+pmh.writeOutProgressToFile = False;
+
+# Set initial parameters
+pmh.initPar                = sys.par;
 
 # Settings for th proposal
-pmh.initPar        = sys.par;
-pmh.invHessian     = np.diag((0.001,0.001,0.001))
-pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
+pmh.invHessian             = 1.0;
+pmh.stepSize               = 0.1;
 
 # Settings for u proposal
-pmh.alpha          = 0.00
-
+pmh.alpha                  = 0.00;
 
 ##############################################################################
 # Run the correlated pmMH algorithm
@@ -102,104 +103,39 @@ iactU   = pmh.calcIACT()
 ##############################################################################
 
 plt.figure(1);
-plt.subplot(3,3,1); 
+plt.subplot(2,3,1); 
 plt.plot(muCPMMH[:,0]); 
 plt.xlabel("iteration"); 
 plt.ylabel("mu (cpmMH)");
 
-plt.subplot(3,3,2); 
+plt.subplot(2,3,2); 
 plt.hist(muCPMMH[:,0],normed=True); 
 plt.xlabel("mu"); 
 plt.ylabel("posterior estimate (cpmMH)");
 
-plt.subplot(3,3,3); 
+plt.subplot(2,3,3); 
 plt.acorr(muCPMMH[:,0],maxlags=100); 
-plt.axis((0,100,0.90,1))
-plt.xlabel("iteration"); 
+plt.axis((0,100,0.92,1))
+plt.xlabel("lag"); 
 plt.ylabel("acf of mu (cpmMH)");
 
-plt.subplot(3,3,4); 
-plt.plot(muCPMMH[:,1]); 
-plt.xlabel("iteration"); 
-plt.ylabel("phi (cpmMH)");
-
-plt.subplot(3,3,5); 
-plt.hist(muCPMMH[:,1],normed=True); 
-plt.xlabel("phi"); 
-plt.ylabel("posterior estimate (cpmMH)");
-
-plt.subplot(3,3,6); 
-plt.acorr(muCPMMH[:,1],maxlags=100); 
-plt.axis((0,100,0.90,1))
-plt.xlabel("iteration"); 
-plt.ylabel("acf of phi (cpmMH)");
-
-plt.subplot(3,3,7); 
-plt.plot(muCPMMH[:,2]); 
-plt.xlabel("iteration"); 
-plt.ylabel("sigmav (cpmMH)");
-
-plt.subplot(3,3,8); 
-plt.hist(muCPMMH[:,2],normed=True); 
-plt.xlabel("sigmav"); 
-plt.ylabel("posterior estimate (cpmMH)");
-
-plt.subplot(3,3,9); 
-plt.acorr(muCPMMH[:,2],maxlags=100); 
-plt.axis((0,100,0.90,1))
-plt.xlabel("iteration"); 
-plt.ylabel("acf of sigmav (cpmMH)");
-
-
-
-plt.figure(2);
-plt.subplot(3,3,1); 
+plt.figure(1);
+plt.subplot(2,3,4); 
 plt.plot(muUPMMH[:,0]); 
 plt.xlabel("iteration"); 
 plt.ylabel("mu (pmMH)");
 
-plt.subplot(3,3,2); 
+plt.subplot(2,3,5); 
 plt.hist(muUPMMH[:,0],normed=True); 
 plt.xlabel("mu"); 
 plt.ylabel("posterior estimate (pmMH)");
 
-plt.subplot(3,3,3); 
+plt.subplot(2,3,6); 
 plt.acorr(muUPMMH[:,0],maxlags=100); 
-plt.axis((0,100,0.90,1))
+plt.axis((0,100,0.92,1))
 plt.xlabel("iteration"); 
 plt.ylabel("acf of mu (pmMH)");
 
-plt.subplot(3,3,4); 
-plt.plot(muUPMMH[:,1]); 
-plt.xlabel("iteration"); 
-plt.ylabel("phi (cpmMH)");
-
-plt.subplot(3,3,5); 
-plt.hist(muUPMMH[:,1],normed=True); 
-plt.xlabel("phi"); 
-plt.ylabel("posterior estimate (cpmMH)");
-
-plt.subplot(3,3,6); 
-plt.acorr(muUPMMH[:,1],maxlags=100); 
-plt.axis((0,100,0.90,1))
-plt.xlabel("iteration"); 
-plt.ylabel("acf of phi (cpmMH)");
-
-plt.subplot(3,3,7); 
-plt.plot(muUPMMH[:,2]); 
-plt.xlabel("iteration"); 
-plt.ylabel("sigmav (cpmMH)");
-
-plt.subplot(3,3,8); 
-plt.hist(muUPMMH[:,2],normed=True); 
-plt.xlabel("sigmav"); 
-plt.ylabel("posterior estimate (cpmMH)");
-
-plt.subplot(3,3,9); 
-plt.acorr(muUPMMH[:,2],maxlags=100); 
-plt.axis((0,100,0.90,1))
-plt.xlabel("iteration"); 
-plt.ylabel("acf of sigmav (cpmMH)");
 
 ##############################################################################
 # End of file
