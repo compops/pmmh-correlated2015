@@ -5,16 +5,36 @@ Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variab
 The first two minimal working examples are parameter inference in a Gaussian IID model. That is, IID data generated from a Gaussian distribution with some mean and standard deviation. The mean parameter is estimated in **mwe-gaussian-iid-1parameter.py** and both the mean and standard deviation in **mwe-gaussian-iid-2parameters.py**. The script is probably quite self-explained. The proposal for theta (when both parameters are estimated) is based on the rule-of-thumb proposed by Sherlock, Thiery, Robert and Rosenthal (2015) 
 On the efficiency of pseudo-marginal random walk Metropolis algorithms avaiable from < http://arxiv.org/pdf/1309.7209 > using a pilot run. 
 
-We are mainly concerned with comparing the IACT computed from the autocorrelation function. For the case when one parameter is estimated, we have the IACT:
- 
+We are mainly concerned with comparing the IACT computed from the autocorrelation function. For the case when only the mean is estimated, we calibrate the model by
+
+``` python
+pmh.invHessian  = 1.0;
+pmh.stepSize    = 0.1;
+pmh.sigmaU      = 0.50
+```
+
+This means that the standard deviation of the Gaussian random walk proposal for the parameter is 0.1. The standard deviation for the CN proposal for u is 0.50. The resulting IACTs for (sigmaU=0.50 and sigmaU=1.0) are:
+
 ``` python
 >>> (iactC, iactU)
 (array([ 46.558]), array([ 48.762]))
 ```
 
-which means that we have a modest increase in efficency by using correlated random numbers. We interprete these values as 49 iterations are required for the uncorrelated algorithm to provide an independent sample compared with 47 for the correlated algorithm.
+which means that we have a modest increase in efficency by using correlated random numbers. Note that sigmaU=1.0 is the same as a standard pmMH algorithm using independent random variables. We interprete these values as 49 iterations are required for the uncorrelated algorithm to provide an independent sample compared with 47 for the correlated algorithm.
 
-The change is larger when we estimate both parameters in the model. In this case, we obtain the following IACT:
+The change is larger when we estimate both parameters in the model. Here, we calibrate the model by
+
+``` python
+# Settings for th proposal (rule-of-thumb)
+pmh.invHessian = np.matrix([[ 0.01338002, -0.00031321],
+                                        [-0.00031321,  0.00943717]]);
+pmh.stepSize   = 2.562 / np.sqrt(th.nParInference);
+
+# Settings for u proposal
+pmh.alpha      = 0.00
+pmh.sigmaU     = 0.50
+```
+where we make use of the aforementioned rule-of-thumb to calibrate the parameter proposal. In this case, we obtain the following IACT:
 
 ``` python
 >>> (iactC, iactU)
@@ -23,7 +43,17 @@ The change is larger when we estimate both parameters in the model. In this case
 
 which means that we decrease the autocorrelation in the Markov chain by about 40% when introducing correlation in the random numbers. 
 
-## mwe-lgss
-
-
 ## mwe-sv-with-leverage
+``` python
+pmh.initPar        = ( 0.22687995,  0.9756004 ,  0.18124849, -0.71862631 );
+pmh.invHessian     = np.matrix([[  3.84374302e-02,   2.91796833e-04,  -5.30385701e-04,  -1.63398216e-03],
+                                [  2.91796833e-04,   9.94254177e-05,  -2.60256138e-04,  -1.73977480e-04],
+                                [ -5.30385701e-04,  -2.60256138e-04,   1.19067965e-03,   2.80879579e-04],
+                                [ -1.63398216e-03,  -1.73977480e-04,   2.80879579e-04,   6.45765006e-03]])
+pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
+```
+
+``` python
+>>> (iactC, iactU)
+(array([ 29.272,  21.692,  21.674,  28.494]), array([ 44.512,  53.336,  52.948,  57.326]))
+```
