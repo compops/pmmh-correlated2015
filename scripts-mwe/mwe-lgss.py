@@ -25,7 +25,7 @@ pmh              = pmh_correlatedRVs.stcPMH();
 ##############################################################################
 sys               = lgss_4parameters.ssm()
 sys.par           = np.zeros((sys.nPar,1))
-sys.par[0]        = 0.50;
+sys.par[0]        = 0.20;
 sys.par[1]        = 0.80;
 sys.par[2]        = 1.00;
 sys.par[3]        = 0.10;
@@ -70,7 +70,10 @@ pmh.writeOutProgressToFile  = False;
 
 # Settings for th proposal
 pmh.initPar        = sys.par;
-pmh.invHessian     = np.diag((0.001,0.001,0.001))
+pmh.invHessian     = np.array([[ 0.03708295, -0.0008457 , -0.00219988],
+                               [-0.0008457 ,  0.00032924,  0.00044877],
+                               [-0.00219988,  0.00044877,  0.00354022]])
+       
 pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
 
 # Settings for u proposal
@@ -82,7 +85,7 @@ pmh.alpha          = 0.00
 ##############################################################################
 
 # Correlated random numbers
-pmh.sigmaU = 0.50
+pmh.sigmaU = 0.0001
 pmh.runSampler( sm, sys, th );
 
 muCPMMH = pmh.th
