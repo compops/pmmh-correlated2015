@@ -47,12 +47,12 @@ where we see that the maximum IACT decreases from 102.478 to 64.194 when introdu
 The second minimal working example is parameter inference in a stochastic volatility model with leverage using real-world data (see section 4.2 in the paper). The data is log-returns from the years 2011 to 2013 from the NASDAQ OMXS30 index, i.e. the 30 most traded stocks on the Stockholm stock exchange. The model is presented in the paper and we would like to infer all four parameters. We make use of the rule-of-thumb and pilot runs to determine the following settings:
 
 ``` python
-pmh.initPar        = ( 0.22687995,  0.9756004 ,  0.18124849, -0.71862631 );
-pmh.invHessian     = np.matrix([[  3.84374302e-02,   2.91796833e-04,  -5.30385701e-04,  -1.63398216e-03],
-                                [  2.91796833e-04,   9.94254177e-05,  -2.60256138e-04,  -1.73977480e-04],
-                                [ -5.30385701e-04,  -2.60256138e-04,   1.19067965e-03,   2.80879579e-04],
-                                [ -1.63398216e-03,  -1.73977480e-04,   2.80879579e-04,   6.45765006e-03]])
-pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
+pmh.initPar    = ( 0.22687995,  0.9756004 ,  0.18124849, -0.71862631 );
+pmh.invHessian = np.matrix([[  3.84374302e-02,   2.91796833e-04,  -5.30385701e-04,  -1.63398216e-03],
+                             [  2.91796833e-04,   9.94254177e-05,  -2.60256138e-04,  -1.73977480e-04],
+                             [ -5.30385701e-04,  -2.60256138e-04,   1.19067965e-03,   2.80879579e-04],
+                             [ -1.63398216e-03,  -1.73977480e-04,   2.80879579e-04,   6.45765006e-03]])
+pmh.stepSize   = 2.562 / np.sqrt(th.nParInference);
 
 # Settings for u proposal
 pmh.alpha      = 0.00
