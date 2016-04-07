@@ -1,9 +1,11 @@
 # pmmh-correlated2015
 Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables
 
+## Dependencies
 
+## Minimal working examples (scripts-mwe)
 
-## mwe-gaussian-iid
+### mwe-gaussian-iid
 The first minimal working example is parameter inference in a Gaussian IID model (see section 4.1 in the paper). That is, IID data generated from a Gaussian distribution with some mean and standard deviation. The mean parameter is estimated in **mwe-gaussian-iid-1parameter.py** and both the mean and standard deviation in **mwe-gaussian-iid-2parameters.py**. The script is probably quite self-explained. The proposal for theta (when both parameters are estimated) is based on the rule-of-thumb proposed by Sherlock, Thiery, Robert and Rosenthal (2015) 
 On the efficiency of pseudo-marginal random walk Metropolis algorithms avaiable from < http://arxiv.org/pdf/1309.7209 > using a pilot run. 
 
@@ -43,7 +45,7 @@ where we make use of the aforementioned rule-of-thumb to calibrate the parameter
 ```
 where we see that the maximum IACT decreases from 102.478 to 64.194 when introducing correlation in the random variables. This corresponds to a decrease by about 45% in the IACT, which corresponds to a similar possible reduction in the computational cost while keeping the same accuracy.
 
-## mwe-sv-with-leverage
+### mwe-sv-with-leverage
 The second minimal working example is parameter inference in a stochastic volatility model with leverage using real-world data (see section 4.2 in the paper). The data is log-returns from the years 2011 to 2013 from the NASDAQ OMXS30 index, i.e. the 30 most traded stocks on the Stockholm stock exchange. The model is presented in the paper and we would like to infer all four parameters. We make use of the rule-of-thumb and pilot runs to determine the following settings:
 
 ``` python
@@ -65,3 +67,7 @@ The resulting IACTs for the four parameters using sigmaU=0.55 and sigmaU=1.0 (st
 (array([ 29.272,  21.692,  21.674,  28.494]), array([ 44.512,  53.336,  52.948,  57.326]))
 ```
 where we see that the maximum IACT decreases from 57.236 to 29.62 when introducing correlation in the random variables. This corresponds to a decrease by about 50% in the IACT, which corresponds to a similar possible reduction in the computational cost while keeping the same accuracy.
+
+## Replication scripts for paper (scripts-draft1)
+
+## Modification of inference in other models
