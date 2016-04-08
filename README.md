@@ -1,13 +1,19 @@
 # pmmh-correlated2015
-Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables
+This code was downloaded from < https://github.com/compops/pmmh-correlated2015 > and contains the code used to produce the results in the tutorial
+
+J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables. Pre-print, arXiv:1512:05483v1, 2015.
+
+The paper is available as a preprint from < http://arxiv.org/pdf/1512.05483 > (and < http://liu.johandahlin.com/ >).
 
 ## Dependencies
+The code is written and tested for Python 2.7. The implementation makes use of NumPy 1.7.1, SciPy 0.12.0, Matplotlib 1.2.1, Pandas and Quandl. Please have these packages installed, on Ubuntu they can be installed using "sudo pip install --upgrade package-name ". See < https://www.quandl.com/tools/python > for more information about the Quandl library.
 
 ## Minimal working examples (scripts-mwe)
+These are three minimal working examples to present how to make use of the correlated pmMH algorithm. Below, we discuss how to calibrate the algorithm and compare it with the uncorrelated version of the algorithm.
 
 ### mwe-gaussian-iid
 The first minimal working example is parameter inference in a Gaussian IID model (see section 4.1 in the paper). That is, IID data generated from a Gaussian distribution with some mean and standard deviation. The mean parameter is estimated in **mwe-gaussian-iid-1parameter.py** and both the mean and standard deviation in **mwe-gaussian-iid-2parameters.py**. The script is probably quite self-explained. The proposal for theta (when both parameters are estimated) is based on the rule-of-thumb proposed by Sherlock, Thiery, Robert and Rosenthal (2015) 
-On the efficiency of pseudo-marginal random walk Metropolis algorithms avaiable from < http://arxiv.org/pdf/1309.7209 > using a pilot run. 
+On the efficiency of pseudo-marginal random walk Metropolis algorithms available from < http://arxiv.org/pdf/1309.7209 > using a pilot run. 
 
 We are mainly concerned with comparing the IACT computed from the autocorrelation function. For the case when only the mean is estimated, we calibrate the model by
 
@@ -23,7 +29,7 @@ This means that the standard deviation of the Gaussian random walk proposal for 
 >>> (iactC, iactU)
 (array([ 46.558]), array([ 48.762]))
 ```
-where we see that the IACT decreases from 48.762 to 46.558 when introducing correlation in the random variables. This corresponds to a modest increase in efficency by using correlated random numbers. We interprete these values as 49 iterations are required for the uncorrelated algorithm to provide an independent sample compared with 47 for the correlated algorithm.
+where we see that the IACT decreases from 48.762 to 46.558 when introducing correlation in the random variables. This corresponds to a modest increase in efficiency by using correlated random numbers. We interpret these values as 49 iterations are required for the uncorrelated algorithm to provide an independent sample compared with 47 for the correlated algorithm.
 
 The change is larger when we estimate both parameters in the model. Here, we calibrate the model by
 
@@ -69,5 +75,18 @@ The resulting IACTs for the four parameters using sigmaU=0.55 and sigmaU=1.0 (st
 where we see that the maximum IACT decreases from 57.236 to 29.62 when introducing correlation in the random variables. This corresponds to a decrease by about 50% in the IACT, which corresponds to a similar possible reduction in the computational cost while keeping the same accuracy.
 
 ## Replication scripts for paper (scripts-draft1)
+These scripts replicate the two examples in the paper: (1) a Gaussian IID model and (2) a stochastic volatility (SV) model with leverage. Some of the scripts needs to be executed on a cluster or similar as it requires many parallel runs of the algorithms with different parameters (sigmaU and alpha). The details are discussed below.
+
+### exampleN-correlation-versus-sigmau.py
+These two scripts replicate Figure 2 for the Gaussian IID model and creates a similar plot for the SV model. That is, computes the correlated in two consecutive log-likelihood estimates (keeping theta fixed) for different correlations in the random variables. A small variation is that this is done for a varying number of particles (N). The plots are recreated by executing the file and the output is also saved as csv-files.
+
+### exampleN-iact-versus-sigmau(-alpha).py
+These two scripts compute estimates of the IACT over a grid of different values of sigmaU and alpha. The output is the estimate of the mean of the parameter posterior, the squared jump distance and the IACT. All these variables are written to a file. In the paper, this is replicated for 32 independent Monte Carlo runs and the input variable simIdx is varied between 0 and 31 in the paper.
+
+### theory-optimal-sigmau-for-CN
+This script recreates Figure 1 by a Peskun analysis. The code is a Python implementation of the C-code provided by Yang and Rodríguez (2013) < http://www.pnas.org/content/110/48/19307.abstract > from their homepage < http://abacus.gene.ucl.ac.uk/software/MCMCjump.html >. 
 
 ## Modification of inference in other models
+This code is fairly general and can be used for inference in any state space model expressed by densities and with a scalar state. The main alteration required for using multivariate states is to rewrite the particle vector, propagation step and weighting step in the particle filter.
+
+The models are defined by files in models/. To implement a new model you can alter the existing models and re-define the functions generateInitialStateRV, generateStateRV, evaluateObservation. These functions take nPart, xtt, xt, yt, tt and u as inputs. nPart and u denote the number of particles and the random variables used in the particle filter. xtt, xt and yt denotes the next state, the current state and the current observation. Finally, tt denotes the current time steps. The parameters of the model are available as self.par and can be used for proposing and weighting particles. Finally, note that generateState and generateObservation needs to be modified if you generate data from the model. Please, let me know if you need any help with this and I will try my best to sort it out.
