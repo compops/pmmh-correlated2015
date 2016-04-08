@@ -1,21 +1,15 @@
-import numpy as np;
+##############################################################################
+##############################################################################
+#
+# Helpers for creating and importing data
+#
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
 
-#=============================================================================
-# Make data noisy for the ABC procedure
-#=============================================================================
-def template_makeNoisy(model, sm ):
-    if ( model.transformY == "arctan" ):
-        if sm.weightdist == "boxcar":
-            model.y = np.arctan(model.ynoiseless) + np.random.uniform(-sm.tolLevel,sm.tolLevel,(model.T,1));
-        elif sm.weightdist == "gaussian":
-            model.y = np.arctan(model.ynoiseless) + sm.tolLevel * np.random.randn(model.T,1);
-    elif ( model.transformY == "none" ):
-        if sm.weightdist == "boxcar":
-            model.y = model.ynoiseless + np.random.uniform(-sm.tolLevel,sm.tolLevel,(model.T,1));
-        elif sm.weightdist == "gaussian":
-            model.y = model.ynoiseless + sm.tolLevel * np.random.randn(model.T,1);
-    else:
-        raise NameError("makeNoisy: unknown transformation of data.")
+import numpy as np;
 
 #=============================================================================
 # Copy data from an instance of this struct to another
@@ -153,23 +147,3 @@ def template_generateData(model,u=None,fileName=None,order=None):
             model.y = np.array(tmp[0:model.T,2], copy=True).reshape((model.T,1));
         else:
             raise NameError("generateData, import data: cannot import that order.");
-
-#=============================================================================
-# Wrappers for optimisation problem in partially adapted PFs
-#=============================================================================
-def template_paOpt(model,xtt,xt,tt):
-    return -1.0* ( model.evaluateState(xtt,xt,tt) + model.evaluateObservation(xt,tt) )
-
-def template_paOptGradient(model,xtt,xt,tt):
-    return -1.0* ( model.evaluateStateGradient(xtt,xt,tt) + model.evaluateObservationGradient(xt,tt) )
-
-
-##############################################################################
-# Logit and inverse-Logit transformations
-##############################################################################
-
-def logit( x ):
-    return np.log ( x / ( 1.0 - x ) );
-
-def invlogit( x ):
-    return np.exp( x ) / ( 1.0 + np.exp( x ) );

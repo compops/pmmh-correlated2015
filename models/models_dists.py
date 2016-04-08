@@ -1,10 +1,9 @@
 ##############################################################################
 ##############################################################################
+#
 # Helpers for distributions and the gradients and Hessian of the log-pdfs
 #
-# Version 2014-12-12
-#
-# Copyright (c) 2014 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################

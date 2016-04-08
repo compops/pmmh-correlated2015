@@ -1,3 +1,18 @@
+##############################################################################
+##############################################################################
+#
+# Replicates Figure 2 in
+#
+# J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, 
+# Accelerating pmMH by correlating auxiliary variables. 
+# Pre-print, arXiv:1512:05483v1, 2015.
+#
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
+
 import numpy   as np
 from   state   import smc
 from   para    import pmh_correlatedRVs

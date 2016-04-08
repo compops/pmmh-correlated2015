@@ -2,9 +2,8 @@
 ##############################################################################
 # Model specification
 # Normal IID model
-# Version 2015-05-08
 #
-# Copyright (c) 2015 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################
@@ -43,31 +42,11 @@ class ssm(object):
     def generateStateRV(self, xt, tt, u):
         return self.par[0] + self.par[1] * u[ range(1,len(xt)+1) ];
 
-    def evaluateState(self, xtt, xt, tt):
-        return norm.pdf( xtt, self.par[0], self.par[1]  );
-
     def generateObservation(self, xt, tt):
-        return xt + self.par[2] * np.random.randn(1,len(xt));
-
+        return xt + self.par[2] * np.random.randn();
+        
     def evaluateObservation(self, xt, tt):
         return norm.logpdf(self.y[tt], xt, self.par[2] );
-
-    #=========================================================================
-    # Define gradients of logarithm of complete data-likelihood
-    #=========================================================================
-    def Dparm(self, xtt, xt, pu, pw, tt):
-        nOut = len(xtt);
-        gradient = np.zeros(( nOut, self.nParInference ));
-        return(gradient);
-
-    #=========================================================================
-    # Define Hessians of logarithm of complete data-likelihood
-    #=========================================================================
-    def DDparm(self, xtt, xt, st, at, tt):
-
-        nOut = len(xtt);
-        hessian = np.zeros( (nOut, self.nParInference,self.nParInference) );
-        return(hessian);
 
     #=========================================================================
     # Define hard priors for the PMH sampler

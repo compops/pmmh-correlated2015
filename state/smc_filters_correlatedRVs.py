@@ -2,9 +2,8 @@
 ##############################################################################
 # Routines for
 # Particle filtering with fixed random numbers
-# Version 2015-09-02
 #
-# Copyright (c) 2015 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################

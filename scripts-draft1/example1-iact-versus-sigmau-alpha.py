@@ -1,3 +1,18 @@
+##############################################################################
+##############################################################################
+#
+# Replicates results in section 4.1
+#
+# J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, 
+# Accelerating pmMH by correlating auxiliary variables. 
+# Pre-print, arXiv:1512:05483v1, 2015.
+#
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
+
 import numpy   as np
 import pandas
 from   state   import smc
@@ -68,23 +83,7 @@ pmh.invHessian  = 1.0;
 pmh.stepSize    = 0.10;
 
 ########################################################################
-# Run the ideal sampler
-########################################################################
-#from scipy.stats import norm
-#
-#class idealSampler(object):
-#    typeSampler='ideal'
-#    def trueLoglikelihood( self, thSys ):
-#        self.ll = np.sum( norm.logpdf( thSys.y,thSys.par[0], np.sqrt(thSys.par[1]**2+thSys.par[2]**2 ) ) )
-#
-#idsamp = idealSampler();
-#idsamp.filter = idsamp.trueLoglikelihood;
-#pmh.runSampler( idsamp, sys, th );
-#np.mean( pmh.th[pmh.nBurnIn:pmh.nIter,:],axis=0)
-#array([ 0.51748592,  0.26525038])
-
-########################################################################
-# Run the sampler
+# Run the samplero
 ########################################################################
 
 gridTheta    = np.arange(0.0,1.025,0.025);
@@ -103,7 +102,6 @@ for jj in range( len(gridpGlobal) ):
         pmh.alpha   = gridpGlobal[jj];
 
         pmh.runSampler( sm, sys, th );
-        #pmh.writeToFile(fileOutName='results/pmh-joe2015/example1-iid/heatmap/pmh0-N'+str(sm.nPart)+'-rvTheta'+str(ii)+'-rvpGlobal'+str(jj)+'-run'+str(simIdx)+'.csv');
 
         res[0,ii,jj]   = gridTheta[ii];
         res[1,ii,jj]   = gridpGlobal[jj];
@@ -114,7 +112,6 @@ for jj in range( len(gridpGlobal) ):
 
         print ((ii,jj,len(gridTheta),len(gridpGlobal)))
 
-    #print(res[:,:,jj])
     fileOut = pandas.DataFrame(res[:,:,jj].transpose(),columns=("theta","alpha","th0","accept rate","sjd(mu)","iact(mu)"));
     fileOut.to_csv('results/example1-iid-heatmap-alpha' +str(jj) +'-run' + str(simIdx) + '.csv');
 

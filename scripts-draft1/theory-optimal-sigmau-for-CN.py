@@ -1,3 +1,21 @@
+##############################################################################
+##############################################################################
+#
+# Replicates results in section 3.3
+#
+# J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, 
+# Accelerating pmMH by correlating auxiliary variables. 
+# Pre-print, arXiv:1512:05483v1, 2015.
+#
+# This code is a Python implemenation of the C-code provided at:
+# http://abacus.gene.ucl.ac.uk/software/MCMCjump.html
+#
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
+
 import numpy as np
 import matplotlib.pylab as plt;
 from scipy.stats import norm
@@ -151,17 +169,3 @@ for ii in range ( len(muGrid) ):
 
 
 plt.plot( muGrid, bestEFF ); plt.axis((0,4,0,1.10))
-
-
-import pandas
-#for ii in range(0,7):
-#for ii in range(6,11):
-#for ii in range(11,15):
-
-for ii in range (len(muGrid)):
-    #kk=0;
-    #fileOut = pandas.DataFrame(res[kk,:,:],columns=("mu","sigmau","acceptrate","eff"));
-    fileOut = pandas.DataFrame(res[ii,:,:],columns=("mu","sigmau","acceptrate","eff"));
-    fileOut.to_csv('peskun-CN-' + str(ii) + '.csv');
-    #kk += 1;
-

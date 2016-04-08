@@ -1,6 +1,24 @@
+##############################################################################
+##############################################################################
+#
+# Replicates results in section 4.2
+#
+# J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, 
+# Accelerating pmMH by correlating auxiliary variables. 
+# Pre-print, arXiv:1512:05483v1, 2015.
+#
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Distributed under the MIT license.
+#
+##############################################################################
+##############################################################################
+
 import numpy   as np
+import pandas
+import Quandl
+from   state   import smc
 from   para    import pmh_correlatedRVs
-from   models  import probit_labour
+from   models  import hwsv_4parameters
 
 import os
 simIdx = int( os.sys.argv[1] );
@@ -8,49 +26,70 @@ simIdx = int( os.sys.argv[1] );
 ##############################################################################
 # Arrange the data structures
 ##############################################################################
+sm               = smc.smcSampler();
 pmh              = pmh_correlatedRVs.stcPMH();
+
 
 ##############################################################################
 # Setup the system
 ##############################################################################
-sys               = probit_labour.ssm()
+sys               = hwsv_4parameters.ssm()
+sys.par           = np.zeros((sys.nPar,1))
+sys.par[0]        = 0.00;
+sys.par[1]        = 0.98;
+sys.par[2]        = 0.16;
+sys.par[3]        = -0.70;
+sys.T             = 748;
+sys.xo            = 0.0;
+sys.version       = "standard"
 
-sys.loadData('data/pmh_joe2015/mroz.csv')
+
+##############################################################################
+# Generate data
+##############################################################################
+sys.generateData();
+d     = Quandl.get("NASDAQOMX/OMXS30", trim_start="2011-01-02", trim_end="2014-01-02")
+y     = 100.0 * np.diff(np.log(d['Index Value']))
+sys.y = y[~np.isnan(y)]
+
 
 ##############################################################################
 # Setup the parameters
 ##############################################################################
-th               = probit_labour.ssm()
-th.nParInference = sys.nRegressors + 1;
+th               = hwsv_4parameters.ssm()
+th.nParInference = 4;
 th.copyData(sys);
 
+
 ##############################################################################
-# Setup the importance sampler
+# Setup the SMC algorithm
 ##############################################################################
-th.filter   = th.estimateLogLikelihood;
-th.xtraj    = np.zeros( sys.T );
-th.nPart    = 150;
+
+sm.filter          = sm.bPFrv;
+sm.sortParticles   = True;
+sm.nPart           = 50;
+sm.resampFactor    = 2.0;
+sm.genInitialState = True;
+
 
 ##############################################################################
 # Setup the PMH algorithm
 ##############################################################################
+pmh.nIter                   = 10000;
+pmh.nBurnIn                 = 1000;
+pmh.nProgressReport         = 5000;
 
-# General settings
-pmh.nIter                  = 10000;
-pmh.nBurnIn                = 1000;
-pmh.rvnSamples             = th.nPart;
-pmh.nProgressReport        = 1000
-pmh.writeOutProgressToFile = False;
+pmh.rvnSamples              = 1 + sm.nPart;
+pmh.writeOutProgressToFile  = False;
 
-# Set initial parameters and Hessian (only used for random walk)
-#pmh.initPar     = sys.par;
-#pmh.invHessian  = np.diag( ( np.array( ( 0.1326, 0.0058, 0.0109, 0.0108, 0.0005, 0.0031, 0.2317, 0.0703 ) )**2) [ range(th.nParInference) ] );
 
-pmh.initPar     = np.array([ 0.15115544, -0.01172118,  0.13007564,  0.12224231, -0.00184684, -0.05017923, -0.84091536,  0.04165484])
-pmh.invHessian  = np.loadtxt("data/pmh_joe2015/mroz-rwwalk-cov.csv");
-pmh.invHessian  = pmh.invHessian[ 0:th.nParInference, 0:th.nParInference ]
-pmh.stepSize    = 2.562 / np.sqrt(th.nParInference);
-
+# Set initial parameters and the settings for the proposal
+pmh.initPar        = ( 0.22687995,  0.9756004 ,  0.18124849, -0.71862631 );
+pmh.invHessian     = np.matrix([[  3.84374302e-02,   2.91796833e-04,  -5.30385701e-04,  -1.63398216e-03],
+                                [  2.91796833e-04,   9.94254177e-05,  -2.60256138e-04,  -1.73977480e-04],
+                                [ -5.30385701e-04,  -2.60256138e-04,   1.19067965e-03,   2.80879579e-04],
+                                [ -1.63398216e-03,  -1.73977480e-04,   2.80879579e-04,   6.45765006e-03]])
+pmh.stepSize       = 2.562 / np.sqrt(th.nParInference);
 
 ########################################################################
 # Run the sampler
@@ -58,29 +97,39 @@ pmh.stepSize    = 2.562 / np.sqrt(th.nParInference);
 
 gridTheta    = np.arange( 0.05, 1.05, 0.05 )
 
-res = np.zeros( ( 1+2*(th.nParInference+1), len(gridTheta) ) )
+res = np.zeros( ( 11, len(gridTheta) ) )
 
 for ii in range( len(gridTheta) ):
 
     # Set random seed
     np.random.seed( 87655678 + simIdx );
 
-    pmh.sigmaU  = gridTheta[ii];
-    pmh.alpha   = 0.0;
+    pmh.sigmaU     = gridTheta[ii];
+    pmh.alpha      = 0.0;
 
-    pmh.runSampler( th, sys, th );
-    pmh.writeToFile(fileOutName='results/example2-labour-fulloutput/pmh0-sigmau'+str(ii)+'-run'+str(simIdx)+'.csv');
+    pmh.runSampler( sm, sys, th );
+    pmh.writeToFile(fileOutName='results/example3-OMXS30-fulloutput/pmh0-sigmau'+str(ii)+'-run'+str(simIdx)+'.csv');
 
-    res[0,ii]                                           = gridTheta[ii];
-    foo                                                 = np.mean( pmh.th[ pmh.nBurnIn:pmh.nIter, : ], axis=0 );
-    res[range(1,th.nParInference+1),ii]                 = foo;
-    res[th.nParInference+1,ii]                          = np.mean( pmh.accept[ pmh.nBurnIn:pmh.nIter ] );
-    res[th.nParInference+2,ii]                          = pmh.calcSJD();
-    foo                                                 = pmh.calcIACT( maxlag=100 );
-    res[range((th.nParInference+3),res.shape[0]),ii]    = foo;
+    res[0,ii]   = gridTheta[ii];
+    foo         = np.mean( pmh.th[ pmh.nBurnIn:pmh.nIter, : ], axis=0 );
+    res[1,ii]   = foo[0];
+    res[2,ii]   = foo[1];
+    res[3,ii]   = foo[2];
+    res[4,ii]   = foo[3];
+    res[5,ii]   = np.mean( pmh.accept[ pmh.nBurnIn:pmh.nIter ] );
+    res[6,ii]   = pmh.calcSJD();
+    foo         = pmh.calcIACT( maxlag=100 );
+    res[7,ii]   = foo[0];
+    res[8,ii]   = foo[1];
+    res[9,ii]   = foo[2];
+    res[10,ii]  = foo[3];
 
     print ( ( ii, len(gridTheta) ) )
 
-import pandas
-fileOut = pandas.DataFrame( res[:,:].transpose(), columns = ("theta","th0","th1","th2","th3","th4","th5","th6","th7","accept rate","sjd","iact0","iact1","iact2","iact3","iact4","iact5","iact6","iact7") );
-fileOut.to_csv('results/example2-labour/pmmh0-run' + str(simIdx) + '.csv');
+fileOut = pandas.DataFrame( res[:,:].transpose(), columns = ("theta","th0","th1","th2","th3","accept rate","sjd","iact0","iact1","iact2","iact3") );
+fileOut.to_csv('results/example3-OMXS30/pmmh0-run' + str(simIdx) + '.csv');
+
+
+########################################################################
+# End of file
+########################################################################

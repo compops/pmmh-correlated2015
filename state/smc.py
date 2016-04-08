@@ -1,10 +1,9 @@
 ##############################################################################
 ##############################################################################
 # Routines for
-# Particle filtering and smoothing
-# Version 2014-12-03
+# Particle filtering
 #
-# Copyright (c) 2014 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################
@@ -30,10 +29,7 @@ class smcSampler(object):
 
     # No particles in the filter
     nPart            = None;
-
-    # Seed for the smooth particle filters
-    seed             = None;
-
+    
     # Threshold for ESS to resample and type of resampling scheme
     resampFactor     = None;
     resamplingType   = None;
@@ -48,8 +44,7 @@ class smcSampler(object):
     ##########################################################################
     # Particle filtering: wrappers for special cases
     ##########################################################################
-
-
+    
     def SISrv(self,sys):
         self.filePrefix               = sys.filePrefix;
         self.resamplingInternal       = 0;

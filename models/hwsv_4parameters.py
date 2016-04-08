@@ -2,9 +2,8 @@
 ##############################################################################
 # Model specification
 # HW model with leverage
-# Version 2014-12-03
 #
-# Copyright (c) 2014 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################
@@ -65,42 +64,9 @@ class ssm(object):
     #=========================================================================
     # Define the model
     #=========================================================================
-    def generateInitialState( self, nPart ):
-        return self.par[0] + np.random.normal(size=(1,nPart)) * self.par[2] / np.sqrt( 1.0 - self.par[1]**2 );
-
-    def evaluateState(self, xtt, xt, tt):
-        return norm.pdf( xtt, self.par[0] + self.par[1] * ( xt - self.par[0] ), self.par[2] );
-
-    def generateState(self, xt, tt):
-
-        # Deterministic part
-        dpart = self.par[0] + self.par[1] * ( xt - self.par[0] )
-
-        # Stochastic shock (noise) uncorrelated with returns
-        spart = self.par[2] * np.sqrt( 1.0 - self.par[3]**2 ) * np.random.randn(1,len(xt));
-
-        # Stochastic shock (noise) correlated with returns
-        et = self.y[tt] * np.exp(-0.5*xt);
-        lpart = self.par[2] * self.par[3] * et;
-
-        # Calculate output
-        return dpart + spart + lpart
-
-    def generateObservation(self, xt, tt):
-
-        w = np.random.randn(1,len(xt)) * np.exp(0.5*xt);
-
-        if ( self.transformY == "arctan" ):
-            w = np.arctan( w );
-
-        return (w, np.zeros(len(xt)), np.zeros(len(xt)));
-
+    
     def evaluateObservation(self, xt, tt):
-
-        if ( self.transformY == "arctan" ):
-            return norm.logpdf( np.arctan( self.y[tt] ), 0, np.exp(xt/2) );
-        if ( self.transformY == "none" ):
-            return norm.logpdf(self.y[tt], 0, np.exp(xt/2) );
+        return norm.logpdf(self.y[tt], 0, np.exp(xt/2) );
 
     def generateInitialStateRV( self, nPart, u ):
         return self.par[0] + u[ range(1,nPart+1) ] * self.par[2] / np.sqrt( 1.0 - self.par[1]**2 );
@@ -118,53 +84,7 @@ class ssm(object):
 
         # Calculate output
         return dpart + spart + lpart;
-
-    #=========================================================================
-    # Define gradients of logarithm of complete data-likelihood
-    #=========================================================================
-    def Dparm(self, xtt, xt, st, at, tt):
-
-        nOut = len(xtt);
-        gradient = np.zeros(( nOut, self.nParInference ));
-        Q1 = self.par[2]**(-1);
-        Q2 = self.par[2]**(-2);
-        Q3 = self.par[2]**(-3);
-        px = xtt - self.par[0] - self.par[1] * ( xt - self.par[0] );
-
-        if (self.version == "tanhexp"):
-            for v1 in range(0,self.nParInference):
-                if v1 == 0:
-                    gradient[:,v1] = Q2 * px * ( 1.0 - self.par[1] );
-                elif v1 == 1:
-                    gradient[:,v1] = Q2 * px * ( xt - self.par[0] ) * ( 1.0 - self.par[1]**2 );
-                elif v1 == 2:
-                    gradient[:,v1] = ( Q2 * px**2 - 1.0 );
-                elif v1 == 3:
-                    raise NameError("Gradients of rho, not implemented")
-                else:
-                    gradient[:,v1] = 0.0;
-        else:
-            for v1 in range(0,self.nParInference):
-                if v1 == 0:
-                    gradient[:,v1] = Q2 * px * ( 1.0 - self.par[1] );
-                elif v1 == 1:
-                    gradient[:,v1] = Q2 * px * ( xt - self.par[0] );
-                elif v1 == 2:
-                    gradient[:,v1] = ( Q3 * px**2 - Q1 );
-                elif v1 == 3:
-                    raise NameError("Gradients of rho, not implemented")
-                else:
-                    gradient[:,v1] = 0.0;
-        return(gradient);
-
-    #=========================================================================
-    # Define Hessians of logarithm of complete data-likelihood
-    #=========================================================================
-    def DDparm(self, xtt, xt, st, at, tt):
-        nOut = len(xtt);
-        hessian = np.zeros( (nOut, self.nParInference,self.nParInference) );
-        return(hessian);
-
+    
     #=========================================================================
     # Define data generation mechanisms
     #=========================================================================
@@ -262,37 +182,20 @@ class ssm(object):
     # Define gradients of log-priors for the PMH sampler
     #=========================================================================
     def dprior1(self,v1):
-        if (self.version == "tanhexp"):
-            if ( v1 == 0 ):
-                # Normal prior for mu
-                return normalLogPDFgradient( self.par[0], 0, 0.2 );
-            elif ( v1 == 1):
-                # Truncated normal prior for phi
-                return normalLogPDFgradient( self.par[1], 0.9, 0.05 ) * ( 1.0 - self.par[1]**2 );
-            elif ( v1 == 2):
-                # Gamma prior for sigma
-                return gammaLogPDFgradient( self.par[2], a=2.0, b=1.0/20.0 ) * self.par[2];
-            elif ( v1 == 3):
-                # Truncated normal prior for rho (truncation by hard prior)
-                return normalLogPDFgradient( self.par[3], -0.5, 0.2 )
-            else:
-                return 0.0;
-
+        if ( v1 == 0 ):
+            # Normal prior for mu
+            return normalLogPDFgradient( self.par[0], 0, 0.2 );
+        elif ( v1 == 1):
+            # Truncated normal prior for phi
+            return normalLogPDFgradient( self.par[1], 0.9, 0.05 );
+        elif ( v1 == 2):
+            # Gamma prior for sigma
+            return gammaLogPDFgradient( self.par[2], a=2.0, b=1.0/20.0 );
+        elif ( v1 == 3):
+            # Truncated normal prior for rho (truncation by hard prior)
+            return normalLogPDFgradient( self.par[3], -0.5, 0.2 )
         else:
-            if ( v1 == 0 ):
-                # Normal prior for mu
-                return normalLogPDFgradient( self.par[0], 0, 0.2 );
-            elif ( v1 == 1):
-                # Truncated normal prior for phi
-                return normalLogPDFgradient( self.par[1], 0.9, 0.05 );
-            elif ( v1 == 2):
-                # Gamma prior for sigma
-                return gammaLogPDFgradient( self.par[2], a=2.0, b=1.0/20.0 );
-            elif ( v1 == 3):
-                # Truncated normal prior for rho (truncation by hard prior)
-                return normalLogPDFgradient( self.par[3], -0.5, 0.2 )
-            else:
-                return 0.0;
+            return 0.0;
 
 
     #=========================================================================
@@ -355,10 +258,7 @@ class ssm(object):
     #=========================================================================
     # Define standard methods for the model struct
     #=========================================================================
-
-    # Make data noisy for the ABC procedur
-    makeNoisy = template_makeNoisy;
-
+    
     # Standard operations on struct
     copyData                = template_copyData;
     storeParameters         = template_storeParameters;

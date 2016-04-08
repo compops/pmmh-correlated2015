@@ -1,10 +1,9 @@
 ##############################################################################
 ##############################################################################
 # Default settings and helpers for
-# Particle filtering and smoothing
-# Version 2014-12-03
+# Particle filtering
 #
-# Copyright (c) 2014 Johan Dahlin [ johan.dahlin (at) liu.se ]
+# Copyright (c) 2016 Johan Dahlin [ johan.dahlin (at) liu.se ]
 # Distributed under the MIT license.
 #
 ##############################################################################
@@ -18,96 +17,6 @@ import os
 # Set default settings if needed
 ##############################################################################
 def setSettings(sm,vers):
-
-    #=====================================================================
-    # Settings for the ABC particle filter
-    #=====================================================================
-    if ( vers == "abcfilter" ):
-        vers = "filter"
-
-        if ( sm.rejectionSMC == None ):
-            print("abc-pf (rejectionSMC): defaulting to not using rejection SMC.");
-            sm.rejectionSMC = False;
-
-        if ( sm.adaptTolLevel == None ):
-            print("abc-pf (adaptTolLevel,propAlive): defaulting to not adapting the tolerance level.");
-            sm.adaptTolLevel = False;
-            sm.propAlive    = 0;
-
-        if ( sm.propAlive == None ):
-            sm.propAlive = 0.10;
-            print("abc-pf (propAlive): defaulting to setting alpha to " + str(sm.propAlive) + ".");
-
-        if (  ( sm.adaptTolLevel != True ) & ( sm.tolLevel == None ) ):
-            sm.tolLevel = 0.10;
-            print("abc-pf (tolLevel) : defaulting using " + str(sm.tolLevel) + " as the tolerance level (epsilon).");
-
-        if ( sm.weightdist == None ):
-            sm.weightdist = "gaussian"
-            print("abc-pf (weightdist): defaulting using noisy ABC with the Gaussian kernel.");
-
-    #=====================================================================
-    # Settings for the smooth filter
-    #=====================================================================
-    if ( vers == "smoothfilter" ):
-        vers = "filter"
-        if ( sm.seed == None ):
-            sm.seed = 87655678;
-            print("smooth-pf (seed): no seed given, so defaulting to using " + str(sm.seed) + ".");
-
-        if ( ( sm.seed != None ) & ( sm.seed != 87655678) ) :
-            sm.seed = 87655678 + sm.seed;
-
-        if ( sm.sortParticles == None ):
-            sm.sortParticles = True;
-            print("smooth-pf (sortParticles): defaulting to sorting particles.");
-
-    #=====================================================================
-    # Settings for the ABC amooth particle filter
-    #=====================================================================
-    if ( vers == "smoothabcfilter" ):
-        vers = "filter"
-
-        if ( sm.rejectionSMC == None ):
-            print("abc-pf (rejectionSMC): defaulting to not using rejection SMC.");
-            sm.rejectionSMC = False;
-
-        if ( sm.adaptTolLevel == None ):
-            print("abc-pf (adaptTolLevel): defaulting to not adapting the tolerance level.");
-            sm.adaptTolLevel = False;
-            sm.propAlive    = 0;
-
-        if ( sm.propAlive == None ):
-            sm.propAlive = 0.10;
-            print("abc-pf (propAlive): defaulting to setting alpha to " + str(sm.propAlive) + ".");
-
-        if ( ( sm.adaptTolLevel != True ) & ( sm.tolLevel == None ) ):
-            sm.tolLevel = 0.10;
-            print("abc-pf (tolLevel): defaulting using " + str(sm.tolLevel) + " as the tolerance level (epsilon).");
-
-        if ( sm.seed == None ):
-            sm.seed = 87655678;
-            print("smooth-pf (seed): no seed given, so defaulting to using " + str(sm.seed) + ".");
-
-        if ( ( sm.seed != None ) & ( sm.seed != 87655678) ) :
-            sm.seed = 87655678 + sm.seed;
-
-    #=====================================================================
-    # Settings for the smooth filter ( Pitt's version )
-    #=====================================================================
-    if ( vers == "smoothfilterPitt" ):
-        vers = "filter"
-
-        if ( sm.seed == None ):
-            sm.seed = 87655678;
-            print("smooth-pf (seed): no seed given, so defaulting to using " + str(sm.seed) + ".");
-
-        if ( ( sm.seed != None ) & ( sm.seed != 87655678) ) :
-            sm.seed = 87655678 + sm.seed;
-
-        if ( sm.nPart2 == None ):
-            sm.nPart2 = sm.T;
-            print("smooth-pf (nPart2): second stage no particle set, so defaulting to using N=T=" + str(sm.nPart2) + ".");
 
     #=====================================================================
     # Settings for the filter
@@ -132,52 +41,6 @@ def setSettings(sm,vers):
         if ( sm.resampFactor == None ):
             print("pf (resampFactor): No limit of effective particles given for resampling, so resampling at every iteration.")
             sm.resampFactor = 2.0;
-
-    #=====================================================================
-    # Specific settings for the FL smoother
-    #=====================================================================
-    if ( vers == "flsmoother" ):
-        vers = "smoother"
-
-        if (sm.fixedLag == None):
-            sm.fixedLag = np.int( np.floor(np.log(sm.T)) );
-            print("ps (fixedLag): no fixed-lag given, so running with rule-of-thumb and Delta: " + str(sm.fixedLag) + ".")
-
-    #=====================================================================
-    # Specific settings for the FFBSi smoother
-    #=====================================================================
-    if ( vers == "ffbsismoother" ):
-        vers = "smoother";
-
-        if ( sm.nPaths == None ):
-            sm.nPaths = np.int( np.floor( np.log( sm.nPart ) ) );
-            print("ffbsiPS (nPaths): no paths to compute backwards missing, using log of the no particles, i.e.: " + str(sm.nPaths) + ".")
-
-        if ( sm.nPathsLimit == None ):
-            sm.nPathsLimit = np.int( np.floor( np.sqrt( sm.nPaths ) ) );
-            print("ffbsiPS (nPathsLimit): using square root of the no paths as the early stopping limit, i.e.: " + str(sm.nPathsLimit) + ".")
-
-        if ( sm.rho == None ):
-            sm.rho = 1.0;
-            print("ffbsiPS (rho): rho missing, using " + str(sm.rho) + ".")
-
-    #=====================================================================
-    # Settings for the general smoother
-    #=====================================================================
-    if ( vers == "smoother" ):
-        if ( sm.calcHessianFlag == None ):
-            print("ps (calcHessianFlag): defaulting to not computing Hessians.")
-            sm.calcHessianFlag = False;
-        elif ( sm.calcHessianFlag == True ):
-            sm.calcGradientFlag = True;
-
-        if ( sm.calcGradientFlag == None ):
-            print("ps (calcGradientFlag): defaulting to not computing gradients.")
-            sm.calcGradientFlag = False;
-
-        if ( sm.calcQFlag == None ):
-            print("ps (calcQFlag): defaulting to not computing Q function.")
-            sm.calcQFlag = False;
 
 ##############################################################################
 # Calculate the pdf of a univariate Gaussian
