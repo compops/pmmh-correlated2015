@@ -6,7 +6,7 @@ J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, Accelerating pseudo-margi
 The paper is available as a preprint from < http://arxiv.org/pdf/1512.05483 > (and < http://liu.johandahlin.com/ >).
 
 ## Dependencies
-The code is written and tested for Python 2.7. The implementation makes use of NumPy 1.7.1, SciPy 0.12.0, Matplotlib 1.2.1, Pandas and Quandl. Please have these packages installed, on Ubuntu they can be installed using "sudo pip install --upgrade package-name ". See < https://www.quandl.com/tools/python > for more information about the Quandl library.
+The code is written and tested for Python 2.7.6. The implementation makes use of NumPy 1.9.2, SciPy 0.15.1, Matplotlib 1.4.3, Pandas 0.13.1 and Quandl 2.8.9. On Ubuntu, these packages can be installed/upgraded using "sudo pip install --upgrade package-name ". For more information about the Quandl library, see < https://www.quandl.com/tools/python >.
 
 ## Minimal working examples (scripts-mwe)
 These are three minimal working examples to present how to make use of the correlated pmMH algorithm. Below, we discuss how to calibrate the algorithm and compare it with the uncorrelated version of the algorithm.
