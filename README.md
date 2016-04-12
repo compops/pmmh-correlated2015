@@ -1,7 +1,7 @@
 # pmmh-correlated2015
 This code was downloaded from < https://github.com/compops/pmmh-correlated2015 > and contains the code used to produce the results in
 
-J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables. Pre-print, arXiv:1512:05483v1, 2015.
+J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, **Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables**. Pre-print, arXiv:1512:05483v1, 2015.
 
 The paper is available as a preprint from < http://arxiv.org/pdf/1512.05483 > (and < http://liu.johandahlin.com/ >).
 
