@@ -3,7 +3,7 @@ This code was downloaded from < https://github.com/compops/pmmh-correlated2015 >
 
 J. Dahlin, F. Lindsten, J. Kronander and T. B. Schön, **Accelerating pseudo-marginal Metropolis-Hastings by correlating auxiliary variables**. Pre-print, arXiv:1512:05483v1, 2015.
 
-The paper is available as a preprint from < http://arxiv.org/pdf/1512.05483 > (and < http://liu.johandahlin.com/ >).
+The paper is available as a preprint from < http://arxiv.org/pdf/1512.05483 >.
 
 ## Dependencies
 The code is written and tested for Python 2.7.6. The implementation makes use of NumPy 1.9.2, SciPy 0.15.1, Matplotlib 1.4.3, Pandas 0.13.1 and Quandl 2.8.9. On Ubuntu, these packages can be installed/upgraded using 
